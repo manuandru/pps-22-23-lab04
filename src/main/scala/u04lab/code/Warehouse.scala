@@ -52,7 +52,7 @@ object Warehouse:
 
     override def store(item: Item): Unit = items = append(items, Cons(item, Nil()))
     override def searchItems(tag: String): List[Item] = List.filter(items)(item => List.contains(item.tags, tag))
-    override def retrieve(code: Int): Option[Item] = ???
+    override def retrieve(code: Int): Option[Item] = List.find(items)(_.code == code)
     override def remove(item: Item): Unit = ???
     override def contains(itemCode: Int): Boolean = List.contains(map(items)(_.code), itemCode)
 
@@ -71,8 +71,8 @@ object Warehouse:
   warehouse.store(xiaomiMoped) // side effect, add xiaomi moped to the warehouse
   assert(Cons(xiaomiMoped, Nil()) == warehouse.searchItems("mobility")) // List(xiaomiMoped)
   assert(Cons(dellXps, Cons(dellInspiron, Nil())) == warehouse.searchItems("notebook")) // List(dellXps, dellInspiron)
-//  warehouse.retrieve(11) // None
-//  warehouse.retrieve(dellXps.code) // Some(dellXps)
+  assert(Option.None() == warehouse.retrieve(11)) // None
+  assert(Option.Some(dellXps) == warehouse.retrieve(dellXps.code)) // Some(dellXps)
 //  warehouse.remove(dellXps) // side effect, remove dell xps from the warehouse
 //  warehouse.retrieve(dellXps.code) // None
 
