@@ -7,7 +7,7 @@ trait Item:
 
 object Item:
   def apply(code: Int, name: String, tags: List[String] = List.empty): Item = ItemImpl(code, name, tags)
-  
+
   private case class ItemImpl(code: Int, name: String, tags: List[String]) extends Item
 
 /**
@@ -47,11 +47,14 @@ object Warehouse:
   def apply(): Warehouse = WarehouseImpl()
 
   private case class WarehouseImpl() extends Warehouse:
-    override def store(item: Item): Unit = ???
+
+    private var items: List[Item] = Nil()
+
+    override def store(item: Item): Unit = items = append(items, Cons(item, Nil()))
     override def searchItems(tag: String): List[Item] = ???
     override def retrieve(code: Int): Option[Item] = ???
     override def remove(item: Item): Unit = ???
-    override def contains(itemCode: Int): Boolean = ???
+    override def contains(itemCode: Int): Boolean = List.contains(map(items)(_.code), itemCode)
 
 
 @main def mainWarehouse(): Unit =
@@ -61,17 +64,17 @@ object Warehouse:
   val dellInspiron = Item(34, "Dell Inspiron 13", cons("notebook", empty))
   val xiaomiMoped = Item(35, "Xiaomi S1", cons("moped", cons("mobility", empty)))
 
-  warehouse.contains(dellXps.code) // false
+  assert(!warehouse.contains(dellXps.code)) // false
   warehouse.store(dellXps) // side effect, add dell xps to the warehouse
-  warehouse.contains(dellXps.code) // true
+  assert(warehouse.contains(dellXps.code)) // true
   warehouse.store(dellInspiron) // side effect, add dell inspiron to the warehouse
   warehouse.store(xiaomiMoped) // side effect, add xiaomi moped to the warehouse
-  warehouse.searchItems("mobility") // List(xiaomiMoped)
-  warehouse.searchItems("notebook") // List(dellXps, dellInspiron)
-  warehouse.retrieve(11) // None
-  warehouse.retrieve(dellXps.code) // Some(dellXps)
-  warehouse.remove(dellXps) // side effect, remove dell xps from the warehouse
-  warehouse.retrieve(dellXps.code) // None
+//  warehouse.searchItems("mobility") // List(xiaomiMoped)
+//  warehouse.searchItems("notebook") // List(dellXps, dellInspiron)
+//  warehouse.retrieve(11) // None
+//  warehouse.retrieve(dellXps.code) // Some(dellXps)
+//  warehouse.remove(dellXps) // side effect, remove dell xps from the warehouse
+//  warehouse.retrieve(dellXps.code) // None
 
 /** Hints:
  * - Implement the Item with a simple case class
