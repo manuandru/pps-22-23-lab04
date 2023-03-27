@@ -6,7 +6,10 @@ trait Item:
   def tags: List[String]
 
 object Item:
-  def apply(code: Int, name: String, tags: List[String] = List.empty): Item = ItemImpl(code, name, tags)
+  def apply(code: Int, name: String, tags: String*): Item =
+    var l: List[String] = Nil()
+    for tag <- tags do l = append(l, Cons(tag, Nil()))
+    ItemImpl(code, name, l)
 
   private case class ItemImpl(code: Int, name: String, tags: List[String]) extends Item
 
@@ -60,9 +63,9 @@ object Warehouse:
 @main def mainWarehouse(): Unit =
   val warehouse = Warehouse()
 
-  val dellXps = Item(33, "Dell XPS 15", cons("notebook", empty))
-  val dellInspiron = Item(34, "Dell Inspiron 13", cons("notebook", empty))
-  val xiaomiMoped = Item(35, "Xiaomi S1", cons("moped", cons("mobility", empty)))
+  val dellXps = Item(33, "Dell XPS 15", "notebook")
+  val dellInspiron = Item(34, "Dell Inspiron 13", "notebook")
+  val xiaomiMoped = Item(35, "Xiaomi S1", "moped", "mobility")
 
   assert(!warehouse.contains(dellXps.code)) // false
   warehouse.store(dellXps) // side effect, add dell xps to the warehouse
