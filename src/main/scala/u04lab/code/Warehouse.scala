@@ -53,7 +53,7 @@ object Warehouse:
     override def store(item: Item): Unit = items = append(items, Cons(item, Nil()))
     override def searchItems(tag: String): List[Item] = List.filter(items)(item => List.contains(item.tags, tag))
     override def retrieve(code: Int): Option[Item] = List.find(items)(_.code == code)
-    override def remove(item: Item): Unit = ???
+    override def remove(item: Item): Unit = items = List.filter(items)(_ != item)
     override def contains(itemCode: Int): Boolean = List.contains(map(items)(_.code), itemCode)
 
 
@@ -73,8 +73,8 @@ object Warehouse:
   assert(Cons(dellXps, Cons(dellInspiron, Nil())) == warehouse.searchItems("notebook")) // List(dellXps, dellInspiron)
   assert(Option.None() == warehouse.retrieve(11)) // None
   assert(Option.Some(dellXps) == warehouse.retrieve(dellXps.code)) // Some(dellXps)
-//  warehouse.remove(dellXps) // side effect, remove dell xps from the warehouse
-//  warehouse.retrieve(dellXps.code) // None
+  warehouse.remove(dellXps) // side effect, remove dell xps from the warehouse
+  assert(Option.None() == warehouse.retrieve(dellXps.code)) // None
 
 /** Hints:
  * - Implement the Item with a simple case class
