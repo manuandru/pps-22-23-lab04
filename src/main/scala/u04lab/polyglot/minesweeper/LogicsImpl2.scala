@@ -27,3 +27,35 @@ object Cell:
   private case class CellImpl(row: Int, column: Int) extends Cell:
     override def adjacentTo(other: Cell): Boolean =
       Math.abs(this.row - other.row) <= 1 && Math.abs(this.column - other.column) <= 1
+
+enum CellContent:
+  case Bomb
+  case Empty
+  case Flag
+  case Hidden
+
+trait Grid:
+  def contentOf(cell: Cell): CellContent
+  def allCells: List[Cell]
+  def countAdjacentBombs(cell: Cell): Int
+
+object Grid:
+  def apply(size: Int, bombCount: Int): Grid = GridImpl(size, bombCount)
+  private class GridImpl(size: Int, bombCount: Int) extends Grid:
+    override def contentOf(cell: Cell): CellContent = ???
+    override def allCells: List[Cell] = ???
+    override def countAdjacentBombs(cell: Cell): Int = ???
+
+trait OverlapGrid:
+  def reveal(cell: Cell): Unit
+  def revealAll: Unit
+  def revealAllBombs(): Unit
+  def changeFlag(cell: Cell): Unit
+
+object OverlapGrid:
+  def apply(grid: Grid): OverlapGrid = OverlapGridImpl(grid)
+  private class OverlapGridImpl(grid: Grid) extends OverlapGrid:
+    override def reveal(cell: Cell): Unit = ???
+    override def revealAll: Unit = ???
+    override def revealAllBombs(): Unit = ???
+    override def changeFlag(cell: Cell): Unit = ???
