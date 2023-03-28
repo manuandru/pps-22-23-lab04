@@ -1,8 +1,8 @@
 package u04lab.polyglot.minesweeper.gui;
 
 import u04lab.polyglot.Pair;
+import u04lab.polyglot.minesweeper.LogicsImpl2;
 import u04lab.polyglot.minesweeper.logic.Logics;
-import u04lab.polyglot.minesweeper.logic.LogicsImpl;
 
 import javax.swing.*;
 import javax.swing.event.MouseInputAdapter;
@@ -20,7 +20,7 @@ public class GUI extends JFrame {
     private final Logics logics;
     
     public GUI(int size, int bombs) {
-        this.logics = new LogicsImpl(size, bombs);
+        this.logics = new LogicsImpl2(size, bombs);
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
         this.setSize(100*size, 100*size);
         
