@@ -11,7 +11,10 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
   private val grid: OverlapGrid = OverlapGrid(Grid(size, bombCount))
 
-  override def checkIfContainsBomb(row: Int, column: Int): Boolean = ???
+  override def checkIfContainsBomb(row: Int, column: Int): Boolean =
+    val target = Cell(row, column)
+    grid.reveal(target)
+    grid.contentOf(target) == CellContent.Bomb
 
   override def getStatus(row: Int, column: Int): RenderStatus =
     val cell = Cell(row, column)
@@ -27,7 +30,8 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
   override def changeFlag(row: Int, column: Int): Unit = ???
 
-  override def won(): Boolean = ???
+  override def won(): Boolean =
+    length(filter(map(grid.allCells)(grid.contentOf))(_ == CellContent.Empty)) == (size*size - bombCount)
 
 trait Cell:
   def row: Int
@@ -63,12 +67,12 @@ object Grid:
 
     override def contentOf(cell: Cell): CellContent = ???
 
-    override def allCells: List[Cell] = ???
+    override def allCells: List[Cell] = map(cellsToContent)(_.getX)
 
     override def countAdjacentBombs(cell: Cell): Int = ???
 
     private def init() =
-      val bombsPosition = randomPositions(size)(Nil())
+      val bombsPosition = randomPositions(bombCount)(Nil())
       for i <- 0 until size; j <- 0 until size
       do
         val cell = Cell(i, j)
@@ -111,9 +115,9 @@ object OverlapGrid:
       else
         CellContent.Hidden
 
-    override def allCells: List[Cell] = ???
+    override def allCells: List[Cell] = grid.allCells
     override def countAdjacentBombs(cell: Cell): Int = ???
-    override def reveal(cell: Cell): Unit = ???
+    override def reveal(cell: Cell): Unit = if !contains(revealedCells, cell) then append(revealedCells, cons(cell, Nil()))
     override def revealAll: Unit = ???
     override def revealAllBombs(): Unit = ???
     override def changeFlag(cell: Cell): Unit = ???
