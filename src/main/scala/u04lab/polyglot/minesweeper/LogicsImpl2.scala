@@ -2,6 +2,7 @@ package u04lab.polyglot.minesweeper
 
 import u04lab.code.List
 import u04lab.code.List.*
+import u04lab.code.Option.*
 import u04lab.polyglot.Pair
 import u04lab.polyglot.minesweeper.gui.RenderStatus
 
@@ -61,15 +62,17 @@ object Grid:
 
   private class GridImpl(size: Int, bombCount: Int)  extends Grid:
 
-    private var cellsToContent: List[Pair[Cell, CellContent]] = Nil()
+    private var cellsToContent: List[(Cell, CellContent)] = Nil()
 
     init()
 
-    override def contentOf(cell: Cell): CellContent = ???
+    override def contentOf(cell: Cell): CellContent = find(cellsToContent)(_._1 == cell) match
+      case Some(_, content) => content
 
-    override def allCells: List[Cell] = map(cellsToContent)(_.getX)
+    override def allCells: List[Cell] = map(cellsToContent)(_._1)
 
-    override def countAdjacentBombs(cell: Cell): Int = ???
+    override def countAdjacentBombs(cell: Cell): Int =
+      length(filter(map(filter(cellsToContent)(pair => cell.adjacentTo(pair._1)))(_._2))(_ == CellContent.Bomb))
 
     private def init() =
       val bombsPosition = randomPositions(bombCount)(Nil())
@@ -79,7 +82,7 @@ object Grid:
         cellsToContent = append(
           cellsToContent,
           cons(
-            Pair(cell, if contains(bombsPosition, cell) then CellContent.Bomb else CellContent.Empty),
+            (cell, if contains(bombsPosition, cell) then CellContent.Bomb else CellContent.Empty),
             Nil())
         )
 
@@ -116,8 +119,21 @@ object OverlapGrid:
         CellContent.Hidden
 
     override def allCells: List[Cell] = grid.allCells
-    override def countAdjacentBombs(cell: Cell): Int = ???
-    override def reveal(cell: Cell): Unit = if !contains(revealedCells, cell) then append(revealedCells, cons(cell, Nil()))
+    override def countAdjacentBombs(cell: Cell): Int = grid countAdjacentBombs cell
+    override def reveal(cell: Cell): Unit =
+      addToRevealed(cell)
+      reveal(cons(cell, Nil()))
+
     override def revealAll: Unit = ???
+
     override def revealAllBombs(): Unit = ???
+
     override def changeFlag(cell: Cell): Unit = ???
+
+    private def reveal(cells: List[Cell]): Unit = cells match
+      case Cons(h, t) =>
+        addToRevealed(h)
+        if countAdjacentBombs(h) == 0 then
+          reveal(append(t, filter(filter(allCells)(h.adjacentTo))(c => !contains(revealedCells, c))))
+
+    private def addToRevealed(cell: Cell): Unit = if !contains(revealedCells, cell) then revealedCells = append(revealedCells, cons(cell, Nil()))
