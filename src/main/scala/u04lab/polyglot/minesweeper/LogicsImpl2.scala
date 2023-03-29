@@ -12,10 +12,12 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
   private val grid: Grid = Grid(size, bombCount)
 
-  override def checkIfContainsBomb(row: Int, column: Int): Boolean = ???
-//    val target = Cell(row, column)
-//    grid.reveal(target)
-//    grid.contentOf(target) == CellContent.BOMB
+  override def checkIfContainsBomb(row: Int, column: Int): Boolean =
+    val target = Position(row, column)
+    grid.reveal(target)
+    grid.contentOf(target) match
+      case Some(Cell.IsBomb()) => true
+      case _ => false
 
   override def getStatus(row: Int, column: Int): RenderStatus =
     val position = Position(row, column)
@@ -72,6 +74,7 @@ object Cell:
 trait Grid:
   def contentOf(position: Position): Option[Cell]
   def countAdjacentBombs(position: Position): Int
+  def reveal(position: Position): Unit
 
 object Grid:
 
@@ -89,8 +92,13 @@ object Grid:
 
     override def contentOf(position: Position): Option[Cell] = find(cells)(_.position == position)
 
-    override def countAdjacentBombs(cell: Position): Int = ???
-//      length(filter(map(filter(cellsToContent)(pair => cell.adjacentTo(pair._1)))(_._2))(_ == CellContent.BOMB))
+    override def countAdjacentBombs(position: Position): Int =
+      length(filter(filter(cells)(_.position.adjacentTo(position)))(_.bomb))
+
+
+    override def reveal(position: Position): Unit = contentOf(position) match
+      case Some(c) => c.reveal()
+      case _ =>
 
     @tailrec
     private def randomPositions(count: Int)(acc: List[Position]): List[Position] = count match
