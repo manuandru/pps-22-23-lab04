@@ -32,8 +32,7 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
   override def changeFlag(row: Int, column: Int): Unit = ???//grid.changeFlag(Cell(row, column))
 
-  override def won(): Boolean = ???
-//    length(filter(map(grid.allCells)(grid.contentOf))(_ == CellContent.EMPTY)) == size*size - bombCount
+  override def won(): Boolean = grid.countOfRevealed == size*size - bombCount
 
 trait Position:
   def row: Int
@@ -75,6 +74,7 @@ trait Grid:
   def contentOf(position: Position): Option[Cell]
   def countAdjacentBombs(position: Position): Int
   def reveal(position: Position): Unit
+  def countOfRevealed: Int
 
 object Grid:
 
@@ -95,6 +95,7 @@ object Grid:
     override def countAdjacentBombs(position: Position): Int =
       length(filter(filter(cells)(_.position.adjacentTo(position)))(_.bomb))
 
+    override def countOfRevealed: Int = length(filter(cells)(_.revealed))
 
     override def reveal(position: Position): Unit = contentOf(position) match
       case Some(c) => c.reveal()
