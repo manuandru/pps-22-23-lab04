@@ -26,11 +26,6 @@ public interface Logics {
     void revealAllBombs();
 
     /**
-     * Reveal all cells.
-     */
-    void revealAll();
-
-    /**
      *
      * @param row of the cell to change flag status.
      * @param column of the cell to change flag status.

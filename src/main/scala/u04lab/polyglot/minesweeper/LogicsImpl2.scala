@@ -1,11 +1,12 @@
 package u04lab.polyglot.minesweeper
 
-import u04lab.code.List
 import u04lab.code.List.*
 import u04lab.code.Option.*
+import u04lab.code.{List, Option}
 import u04lab.polyglot.Pair
 import u04lab.polyglot.minesweeper.gui.RenderStatus
 
+import scala.annotation.tailrec
 import scala.util.Random
 
 class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
@@ -15,24 +16,23 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
   override def checkIfContainsBomb(row: Int, column: Int): Boolean =
     val target = Cell(row, column)
     grid.reveal(target)
-    grid.contentOf(target) == CellContent.Bomb
+    grid.contentOf(target) == CellContent.BOMB
 
   override def getStatus(row: Int, column: Int): RenderStatus =
     val cell = Cell(row, column)
     grid.contentOf(cell) match
-      case CellContent.Bomb => RenderStatus.BOMB
-      case CellContent.Empty => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(cell))
-      case CellContent.Flag => RenderStatus.FLAG
-      case CellContent.Hidden => RenderStatus.HIDDEN
+      case CellContent.BOMB => RenderStatus.BOMB
+      case CellContent.EMPTY => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(cell))
+      case CellContent.FLAG => RenderStatus.FLAG
+      case CellContent.HIDDEN => RenderStatus.HIDDEN
+      case CellContent.INVALID_CELL => ???
 
-  override def revealAllBombs(): Unit = ???
+  override def revealAllBombs(): Unit = grid.revealAllBombs()
 
-  override def revealAll(): Unit = ???
-
-  override def changeFlag(row: Int, column: Int): Unit = ???
+  override def changeFlag(row: Int, column: Int): Unit = grid.changeFlag(Cell(row, column))
 
   override def won(): Boolean =
-    length(filter(map(grid.allCells)(grid.contentOf))(_ == CellContent.Empty)) == (size*size - bombCount)
+    length(filter(map(grid.allCells)(grid.contentOf))(_ == CellContent.EMPTY)) == size*size - bombCount
 
 trait Cell:
   def row: Int
@@ -46,10 +46,7 @@ object Cell:
       Math.abs(this.row - other.row) <= 1 && Math.abs(this.column - other.column) <= 1
 
 enum CellContent:
-  case Bomb
-  case Empty
-  case Flag
-  case Hidden
+  case BOMB, EMPTY, FLAG, HIDDEN, INVALID_CELL
 
 trait Grid:
   def contentOf(cell: Cell): CellContent
@@ -62,30 +59,23 @@ object Grid:
 
   private class GridImpl(size: Int, bombCount: Int)  extends Grid:
 
+    private val bombsPosition = randomPositions(bombCount)(Nil())
     private var cellsToContent: List[(Cell, CellContent)] = Nil()
+    for i <- 0 until size; j <- 0 until size
+    do
+      val cell = Cell(i, j)
+      val cellContent = if contains(bombsPosition, cell) then CellContent.BOMB else CellContent.EMPTY
+      cellsToContent = append(cellsToContent, cons((cell, cellContent), Nil()))
 
-    init()
-
-    override def contentOf(cell: Cell): CellContent = find(cellsToContent)(_._1 == cell) match
-      case Some(_, content) => content
+    override def contentOf(cell: Cell): CellContent =
+      Option.orElse(Option.flatMap(find(cellsToContent)(_._1 == cell))(c => Some(c._2)), CellContent.INVALID_CELL)
 
     override def allCells: List[Cell] = map(cellsToContent)(_._1)
 
     override def countAdjacentBombs(cell: Cell): Int =
-      length(filter(map(filter(cellsToContent)(pair => cell.adjacentTo(pair._1)))(_._2))(_ == CellContent.Bomb))
+      length(filter(map(filter(cellsToContent)(pair => cell.adjacentTo(pair._1)))(_._2))(_ == CellContent.BOMB))
 
-    private def init() =
-      val bombsPosition = randomPositions(bombCount)(Nil())
-      for i <- 0 until size; j <- 0 until size
-      do
-        val cell = Cell(i, j)
-        cellsToContent = append(
-          cellsToContent,
-          cons(
-            (cell, if contains(bombsPosition, cell) then CellContent.Bomb else CellContent.Empty),
-            Nil())
-        )
-
+    @tailrec
     private def randomPositions(count: Int)(acc: List[Cell]): List[Cell] = count match
       case 0 => acc
       case _ =>
@@ -97,7 +87,6 @@ object Grid:
 
 trait OverlapGrid extends Grid:
   def reveal(cell: Cell): Unit
-  def revealAll: Unit
   def revealAllBombs(): Unit
   def changeFlag(cell: Cell): Unit
 
@@ -114,26 +103,44 @@ object OverlapGrid:
       if contains(revealedCells, cell) then
         grid.contentOf(cell)
       else if contains(flaggedCells, cell) then
-        CellContent.Flag
+        CellContent.FLAG
       else
-        CellContent.Hidden
+        CellContent.HIDDEN
 
     override def allCells: List[Cell] = grid.allCells
+
     override def countAdjacentBombs(cell: Cell): Int = grid countAdjacentBombs cell
-    override def reveal(cell: Cell): Unit =
-      addToRevealed(cell)
-      reveal(cons(cell, Nil()))
 
-    override def revealAll: Unit = ???
+    override def reveal(cell: Cell): Unit = revealAllNear(cons(cell, Nil()))
 
-    override def revealAllBombs(): Unit = ???
+    override def revealAllBombs(): Unit =
+      val bombs = filter(allCells)(grid.contentOf(_) == CellContent.BOMB)
+      revealAll(bombs)
 
     override def changeFlag(cell: Cell): Unit = ???
 
-    private def reveal(cells: List[Cell]): Unit = cells match
-      case Cons(h, t) =>
-        addToRevealed(h)
-        if countAdjacentBombs(h) == 0 then
-          reveal(append(t, filter(filter(allCells)(h.adjacentTo))(c => !contains(revealedCells, c))))
+    private def revealAllNear(cells: List[Cell]): Unit = cells match
+          case Cons(h, t) =>
+            revealOnly(h)
+            val cellsToReveal =
+              if countAdjacentBombs(h) == 0 then
+                val nearCells = filter(filter(allCells)(h.adjacentTo))(c => !contains(revealedCells, c))
+                append(t, nearCells)
+              else
+                t
+            revealAllNear(cellsToReveal)
+          case _ => {}
 
-    private def addToRevealed(cell: Cell): Unit = if !contains(revealedCells, cell) then revealedCells = append(revealedCells, cons(cell, Nil()))
+    @tailrec
+    private def revealAll(cells: List[Cell]): Unit = cells match
+      case Cons(h, t) => revealOnly(h); revealAll(t)
+      case _ => {}
+
+    private def revealOnly(cell: Cell): Unit =
+      revealedCells = addIfAbsent(revealedCells)(cell)
+
+    private def addIfAbsent[A](list: List[A])(elem: A): List[A] =
+      if !contains(list, elem) then
+        append(list, cons(elem, Nil()))
+      else
+        list
