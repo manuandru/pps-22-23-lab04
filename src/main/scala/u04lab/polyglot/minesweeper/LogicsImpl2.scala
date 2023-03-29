@@ -14,7 +14,7 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
   override def checkIfContainsBomb(row: Int, column: Int): Boolean =
     val target = Position(row, column)
-    grid.reveal(target)
+    grid.reveal(_.position == target)
     grid.contentOf(target) match
       case Some(Cell.IsBomb()) => true
       case _ => false
@@ -28,7 +28,7 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
       case Some(Cell.IsHidden()) => RenderStatus.HIDDEN
       case _ => RenderStatus.ERROR
 
-  override def revealAllBombs(): Unit = grid.revealAllBombs()
+  override def revealAllBombs(): Unit = grid.reveal(_.bomb)
 
   override def changeFlag(row: Int, column: Int): Unit = ???//grid.changeFlag(Cell(row, column))
 
@@ -73,9 +73,8 @@ object Cell:
 trait Grid:
   def contentOf(position: Position): Option[Cell]
   def countAdjacentBombs(position: Position): Int
-  def reveal(position: Position): Unit
+  def reveal(predicate: Cell => Boolean): Unit
   def countOfRevealed: Int
-  def revealAllBombs(): Unit
 
 object Grid:
 
@@ -97,11 +96,7 @@ object Grid:
 
     override def countOfRevealed: Int = length(filter(cells)(_.revealed))
 
-    override def reveal(position: Position): Unit = contentOf(position) match
-      case Some(c) => c.reveal()
-      case _ =>
-
-    override def revealAllBombs(): Unit = reveal(cells)(_.bomb)
+    override def reveal(predicate: Cell => Boolean): Unit = reveal(cells)(predicate)
 
     private def reveal(list: List[Cell])(predicate: Cell => Boolean): Unit = list match
       case Cons(h, t) =>
