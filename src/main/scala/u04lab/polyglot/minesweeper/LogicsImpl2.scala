@@ -10,136 +10,154 @@ import scala.util.Random
 
 class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
-  private val grid: OverlapGrid = OverlapGrid(Grid(size, bombCount))
+  private val grid: Grid = Grid(size, bombCount)
 
-  override def checkIfContainsBomb(row: Int, column: Int): Boolean =
-    val target = Cell(row, column)
-    grid.reveal(target)
-    grid.contentOf(target) == CellContent.BOMB
+  override def checkIfContainsBomb(row: Int, column: Int): Boolean = ???
+//    val target = Cell(row, column)
+//    grid.reveal(target)
+//    grid.contentOf(target) == CellContent.BOMB
 
   override def getStatus(row: Int, column: Int): RenderStatus =
-    val cell = Cell(row, column)
-    grid.contentOf(cell) match
-      case CellContent.BOMB => RenderStatus.BOMB
-      case CellContent.EMPTY => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(cell))
-      case CellContent.FLAG => RenderStatus.FLAG
-      case CellContent.HIDDEN => RenderStatus.HIDDEN
-      case CellContent.INVALID_CELL => ???
+    val position = Position(row, column)
+    grid.contentOf(position) match
+      case Some(Cell.IsBomb()) => RenderStatus.BOMB
+      case Some(Cell.IsRevealed()) => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(position))
+      case Some(Cell.IsFlag()) => RenderStatus.FLAG
+      case Some(Cell.IsHidden()) => RenderStatus.HIDDEN
+      case _ => RenderStatus.ERROR
 
-  override def revealAllBombs(): Unit = grid.revealAllBombs()
+  override def revealAllBombs(): Unit = ???//grid.revealAllBombs()
 
-  override def changeFlag(row: Int, column: Int): Unit = grid.changeFlag(Cell(row, column))
+  override def changeFlag(row: Int, column: Int): Unit = ???//grid.changeFlag(Cell(row, column))
 
-  override def won(): Boolean =
-    length(filter(map(grid.allCells)(grid.contentOf))(_ == CellContent.EMPTY)) == size*size - bombCount
+  override def won(): Boolean = ???
+//    length(filter(map(grid.allCells)(grid.contentOf))(_ == CellContent.EMPTY)) == size*size - bombCount
 
-trait Cell:
+trait Position:
   def row: Int
   def column: Int
-  def adjacentTo(other: Cell): Boolean
+  def adjacentTo(other: Position): Boolean
 
-object Cell:
-  def apply(row: Int, column: Int): Cell = CellImpl(row, column)
-  private case class CellImpl(row: Int, column: Int) extends Cell:
-    override def adjacentTo(other: Cell): Boolean =
+object Position:
+  def apply(row: Int, column: Int): Position = PositionImpl(row: Int, column: Int)
+
+  private case class PositionImpl(val row: Int, val column: Int) extends Position:
+    override def adjacentTo(other: Position): Boolean =
       Math.abs(this.row - other.row) <= 1 && Math.abs(this.column - other.column) <= 1
 
-enum CellContent:
-  case BOMB, EMPTY, FLAG, HIDDEN, INVALID_CELL
+trait Cell:
+  def position: Position
+  def bomb: Boolean
+  def flag: Boolean
+  def flag_=(flag: Boolean): Unit
+  def revealed: Boolean
+  def reveal(): Unit
+
+object Cell:
+  def apply(position: Position, bomb: Boolean): Cell = CellImpl(position, bomb)
+  private case class CellImpl(val position: Position, val bomb: Boolean, var flag: Boolean = false) extends Cell:
+    private var _revealed = false
+    override def revealed: Boolean = _revealed
+    override def reveal(): Unit = _revealed = true
+
+  object IsBomb:
+    def unapply(cell: Cell): Boolean = cell.revealed && cell.bomb
+  object IsRevealed:
+    def unapply(cell: Cell): Boolean = cell.revealed
+  object IsFlag:
+    def unapply(cell: Cell): Boolean = !cell.revealed && cell.flag
+  object IsHidden:
+    def unapply(cell: Cell): Boolean = !cell.revealed
 
 trait Grid:
-  def contentOf(cell: Cell): CellContent
-  def allCells: List[Cell]
-  def countAdjacentBombs(cell: Cell): Int
+  def contentOf(position: Position): Option[Cell]
+  def countAdjacentBombs(position: Position): Int
 
 object Grid:
 
   def apply(size: Int, bombCount: Int): Grid = GridImpl(size, bombCount)
 
-  private class GridImpl(size: Int, bombCount: Int)  extends Grid:
+  private class GridImpl(size: Int, bombCount: Int) extends Grid:
 
     private val bombsPosition = randomPositions(bombCount)(Nil())
-    private var cellsToContent: List[(Cell, CellContent)] = Nil()
+    private var cells: List[Cell] = Nil()
     for i <- 0 until size; j <- 0 until size
     do
-      val cell = Cell(i, j)
-      val cellContent = if contains(bombsPosition, cell) then CellContent.BOMB else CellContent.EMPTY
-      cellsToContent = append(cellsToContent, cons((cell, cellContent), Nil()))
+      val position = Position(i, j)
+      val isBomb = contains(bombsPosition, position)
+      cells = append(cells, cons(Cell(position, isBomb), Nil()))
 
-    override def contentOf(cell: Cell): CellContent =
-      Option.orElse(Option.flatMap(find(cellsToContent)(_._1 == cell))(c => Some(c._2)), CellContent.INVALID_CELL)
+    override def contentOf(position: Position): Option[Cell] = find(cells)(_.position == position)
 
-    override def allCells: List[Cell] = map(cellsToContent)(_._1)
-
-    override def countAdjacentBombs(cell: Cell): Int =
-      length(filter(map(filter(cellsToContent)(pair => cell.adjacentTo(pair._1)))(_._2))(_ == CellContent.BOMB))
+    override def countAdjacentBombs(cell: Position): Int = ???
+//      length(filter(map(filter(cellsToContent)(pair => cell.adjacentTo(pair._1)))(_._2))(_ == CellContent.BOMB))
 
     @tailrec
-    private def randomPositions(count: Int)(acc: List[Cell]): List[Cell] = count match
+    private def randomPositions(count: Int)(acc: List[Position]): List[Position] = count match
       case 0 => acc
       case _ =>
-        val randomCell = Cell(Random.nextInt(size), Random.nextInt(size))
-        if contains(acc, randomCell) then
+        val randomPos = Position(Random.nextInt(size), Random.nextInt(size))
+        if contains(acc, randomPos) then
           randomPositions(count)(acc)
         else
-          randomPositions(count - 1)(append(acc, cons(randomCell, Nil())))
+          randomPositions(count - 1)(append(acc, cons(randomPos, Nil())))
 
-trait OverlapGrid extends Grid:
-  def reveal(cell: Cell): Unit
-  def revealAllBombs(): Unit
-  def changeFlag(cell: Cell): Unit
+//trait OverlapGrid extends Grid:
+//  def reveal(cell: Cell): Unit
+//  def revealAllBombs(): Unit
+//  def changeFlag(cell: Cell): Unit
 
-object OverlapGrid:
-
-  def apply(grid: Grid): OverlapGrid = OverlapGridImpl(grid)
-
-  private class OverlapGridImpl(grid: Grid) extends OverlapGrid:
-
-    private var revealedCells: List[Cell] = Nil()
-    private var flaggedCells: List[Cell] = Nil()
-
-    override def contentOf(cell: Cell): CellContent =
-      if contains(revealedCells, cell) then
-        grid.contentOf(cell)
-      else if contains(flaggedCells, cell) then
-        CellContent.FLAG
-      else
-        CellContent.HIDDEN
-
-    override def allCells: List[Cell] = grid.allCells
-    override def countAdjacentBombs(cell: Cell): Int = grid countAdjacentBombs cell
-    override def reveal(cell: Cell): Unit = revealAllNear(cons(cell, Nil()))
-    override def revealAllBombs(): Unit = revealAll(filter(allCells)(grid.contentOf(_) == CellContent.BOMB))
-
-    override def changeFlag(cell: Cell): Unit =
-      flaggedCells =
-        if contains(flaggedCells, cell) then
-          remove(flaggedCells)(_ == cell)
-        else
-          append(flaggedCells, cons(cell, Nil()))
-
-    private def revealAllNear(cells: List[Cell]): Unit = cells match
-          case Cons(h, t) =>
-            revealOnly(h)
-            val cellsToReveal =
-              if countAdjacentBombs(h) == 0 then
-                val nearCells = filter(filter(allCells)(h.adjacentTo))(c => !contains(revealedCells, c))
-                append(t, nearCells)
-              else
-                t
-            revealAllNear(cellsToReveal)
-          case _ => {}
-
-    @tailrec
-    private def revealAll(cells: List[Cell]): Unit = cells match
-      case Cons(h, t) => revealOnly(h); revealAll(t)
-      case _ => {}
-
-    private def revealOnly(cell: Cell): Unit =
-      revealedCells = addIfAbsent(revealedCells)(cell)
-
-    private def addIfAbsent[A](list: List[A])(elem: A): List[A] =
-      if !contains(list, elem) then
-        append(list, cons(elem, Nil()))
-      else
-        list
+//object OverlapGrid:
+//
+//  def apply(grid: Grid): OverlapGrid = OverlapGridImpl(grid)
+//
+//  private class OverlapGridImpl(grid: Grid) extends OverlapGrid:
+//
+//    private var revealedCells: List[Cell] = Nil()
+//    private var flaggedCells: List[Cell] = Nil()
+//
+//    override def contentOf(cell: Cell): CellContent =
+//      if contains(revealedCells, cell) then
+//        grid.contentOf(cell)
+//      else if contains(flaggedCells, cell) then
+//        CellContent.FLAG
+//      else
+//        CellContent.HIDDEN
+//
+//    override def allCells: List[Cell] = grid.allCells
+//    override def countAdjacentBombs(cell: Cell): Int = grid countAdjacentBombs cell
+//    override def reveal(cell: Cell): Unit = revealAllNear(cons(cell, Nil()))
+//    override def revealAllBombs(): Unit = revealAll(filter(allCells)(grid.contentOf(_) == CellContent.BOMB))
+//
+//    override def changeFlag(cell: Cell): Unit =
+//      flaggedCells =
+//        if contains(flaggedCells, cell) then
+//          remove(flaggedCells)(_ == cell)
+//        else
+//          append(flaggedCells, cons(cell, Nil()))
+//
+//    private def revealAllNear(cells: List[Cell]): Unit = cells match
+//          case Cons(h, t) =>
+//            revealOnly(h)
+//            val cellsToReveal =
+//              if countAdjacentBombs(h) == 0 then
+//                val nearCells = filter(filter(allCells)(h.adjacentTo))(c => !contains(revealedCells, c))
+//                append(t, nearCells)
+//              else
+//                t
+//            revealAllNear(cellsToReveal)
+//          case _ => {}
+//
+//    @tailrec
+//    private def revealAll(cells: List[Cell]): Unit = cells match
+//      case Cons(h, t) => revealOnly(h); revealAll(t)
+//      case _ => {}
+//
+//    private def revealOnly(cell: Cell): Unit =
+//      revealedCells = addIfAbsent(revealedCells)(cell)
+//
+//    private def addIfAbsent[A](list: List[A])(elem: A): List[A] =
+//      if !contains(list, elem) then
+//        append(list, cons(elem, Nil()))
+//      else
+//        list

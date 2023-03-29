@@ -1,7 +1,7 @@
 package u04lab.polyglot.minesweeper.gui;
 
 public enum RenderStatus {
-    BOMB, COUNTER, FLAG, HIDDEN;
+    BOMB, COUNTER, FLAG, HIDDEN, ERROR;
 
     private int counter;
 
