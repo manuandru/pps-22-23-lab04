@@ -3,7 +3,6 @@ package u04lab.polyglot.minesweeper
 import u04lab.code.List.*
 import u04lab.code.Option.*
 import u04lab.code.{List, Option}
-import u04lab.polyglot.Pair
 import u04lab.polyglot.minesweeper.gui.RenderStatus
 
 import scala.annotation.tailrec
@@ -108,16 +107,16 @@ object OverlapGrid:
         CellContent.HIDDEN
 
     override def allCells: List[Cell] = grid.allCells
-
     override def countAdjacentBombs(cell: Cell): Int = grid countAdjacentBombs cell
-
     override def reveal(cell: Cell): Unit = revealAllNear(cons(cell, Nil()))
+    override def revealAllBombs(): Unit = revealAll(filter(allCells)(grid.contentOf(_) == CellContent.BOMB))
 
-    override def revealAllBombs(): Unit =
-      val bombs = filter(allCells)(grid.contentOf(_) == CellContent.BOMB)
-      revealAll(bombs)
-
-    override def changeFlag(cell: Cell): Unit = ???
+    override def changeFlag(cell: Cell): Unit =
+      flaggedCells =
+        if contains(flaggedCells, cell) then
+          remove(flaggedCells)(_ == cell)
+        else
+          append(flaggedCells, cons(cell, Nil()))
 
     private def revealAllNear(cells: List[Cell]): Unit = cells match
           case Cons(h, t) =>
