@@ -108,7 +108,7 @@ object Grid:
       perform(_.reveal())(_.position == position)
       if countAdjacentBombs(position) == 0 then
         val cellsToReveal = filter(filter(cells)(_.position.adjacentTo(position)))(!_.revealed)
-        map(cellsToReveal)(c => {revealAllNear(c.position); c})
+        map(cellsToReveal)(c => {revealAllNear(c.position); c}) // aka foreach
 
     @tailrec
     private def randomPositions(count: Int)(acc: List[Position]): List[Position] = count match
