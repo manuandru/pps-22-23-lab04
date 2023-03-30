@@ -28,9 +28,9 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
       case Some(Cell.IsHidden()) => RenderStatus.HIDDEN
       case _ => RenderStatus.ERROR
 
-  override def revealAllBombs(): Unit = grid.reveal(_.bomb)
+  override def revealAllBombs(): Unit = grid.perform(_.reveal())(_.bomb)
 
-  override def changeFlag(row: Int, column: Int): Unit = grid.changeFlag(Position(row, column))
+  override def changeFlag(row: Int, column: Int): Unit = grid.perform(c => c.flag = !c.flag)(_.position == Position(row, column))
 
   override def won(): Boolean = grid.countOfRevealed == size*size - bombCount
 
@@ -72,11 +72,10 @@ object Cell:
 
 trait Grid:
   def findBy(position: Position): Option[Cell]
-  def reveal(predicate: Cell => Boolean): Unit
-  def revealAllNear(position: Position): Unit
   def countAdjacentBombs(position: Position): Int
   def countOfRevealed: Int
-  def changeFlag(position: Position): Unit
+  def perform(op: Cell => Unit)(predicate: Cell => Boolean): Unit
+  def revealAllNear(position: Position): Unit
 
 object Grid:
 
@@ -98,22 +97,18 @@ object Grid:
 
     override def countOfRevealed: Int = length(filter(cells)(_.revealed))
 
-    override def reveal(predicate: Cell => Boolean): Unit = reveal(cells)(predicate)
+    def perform(op: Cell => Unit)(predicate: Cell => Boolean): Unit = perform(cells)(op)(predicate)
 
     @tailrec
-    private def reveal(list: List[Cell])(predicate: Cell => Boolean): Unit = list match
-      case Cons(h, t) => if predicate(h) then h.reveal(); reveal(t)(predicate)
+    private def perform(list: List[Cell])(op: Cell => Unit)(predicate: Cell => Boolean): Unit = list match
+      case Cons(h, t) => if predicate(h) then op(h); perform(t)(op)(predicate)
       case _ =>
 
     def revealAllNear(position: Position): Unit =
-      reveal(_.position == position)
+      perform(_.reveal())(_.position == position)
       if countAdjacentBombs(position) == 0 then
         val cellsToReveal = filter(filter(cells)(_.position.adjacentTo(position)))(!_.revealed)
         map(cellsToReveal)(c => {revealAllNear(c.position); c})
-
-    override def changeFlag(position: Position): Unit = findBy(position) match
-      case Some(c) => c.flag = !c.flag
-      case _ =>
 
     @tailrec
     private def randomPositions(count: Int)(acc: List[Position]): List[Position] = count match
