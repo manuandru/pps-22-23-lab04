@@ -102,9 +102,7 @@ object Grid:
 
     @tailrec
     private def reveal(list: List[Cell])(predicate: Cell => Boolean): Unit = list match
-      case Cons(h, t) =>
-        if predicate(h) then h.reveal()
-        reveal(t)(predicate)
+      case Cons(h, t) => if predicate(h) then h.reveal(); reveal(t)(predicate)
       case _ =>
 
     def revealAllNear(position: Position): Unit =
@@ -126,63 +124,3 @@ object Grid:
           randomPositions(count)(acc)
         else
           randomPositions(count - 1)(append(acc, cons(randomPos, Nil())))
-
-//trait OverlapGrid extends Grid:
-//  def reveal(cell: Cell): Unit
-//  def revealAllBombs(): Unit
-//  def changeFlag(cell: Cell): Unit
-
-//object OverlapGrid:
-//
-//  def apply(grid: Grid): OverlapGrid = OverlapGridImpl(grid)
-//
-//  private class OverlapGridImpl(grid: Grid) extends OverlapGrid:
-//
-//    private var revealedCells: List[Cell] = Nil()
-//    private var flaggedCells: List[Cell] = Nil()
-//
-//    override def contentOf(cell: Cell): CellContent =
-//      if contains(revealedCells, cell) then
-//        grid.contentOf(cell)
-//      else if contains(flaggedCells, cell) then
-//        CellContent.FLAG
-//      else
-//        CellContent.HIDDEN
-//
-//    override def allCells: List[Cell] = grid.allCells
-//    override def countAdjacentBombs(cell: Cell): Int = grid countAdjacentBombs cell
-//    override def reveal(cell: Cell): Unit = revealAllNear(cons(cell, Nil()))
-//    override def revealAllBombs(): Unit = revealAll(filter(allCells)(grid.contentOf(_) == CellContent.BOMB))
-//
-//    override def changeFlag(cell: Cell): Unit =
-//      flaggedCells =
-//        if contains(flaggedCells, cell) then
-//          remove(flaggedCells)(_ == cell)
-//        else
-//          append(flaggedCells, cons(cell, Nil()))
-//
-//    private def revealAllNear(cells: List[Cell]): Unit = cells match
-//          case Cons(h, t) =>
-//            revealOnly(h)
-//            val cellsToReveal =
-//              if countAdjacentBombs(h) == 0 then
-//                val nearCells = filter(filter(allCells)(h.adjacentTo))(c => !contains(revealedCells, c))
-//                append(t, nearCells)
-//              else
-//                t
-//            revealAllNear(cellsToReveal)
-//          case _ => {}
-//
-//    @tailrec
-//    private def revealAll(cells: List[Cell]): Unit = cells match
-//      case Cons(h, t) => revealOnly(h); revealAll(t)
-//      case _ => {}
-//
-//    private def revealOnly(cell: Cell): Unit =
-//      revealedCells = addIfAbsent(revealedCells)(cell)
-//
-//    private def addIfAbsent[A](list: List[A])(elem: A): List[A] =
-//      if !contains(list, elem) then
-//        append(list, cons(elem, Nil()))
-//      else
-//        list
