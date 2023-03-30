@@ -14,7 +14,7 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
 
   override def checkIfContainsBomb(row: Int, column: Int): Boolean =
     val target = Position(row, column)
-    grid.reveal(_.position == target)
+    grid.revealAllNear(target)
     grid.findBy(target) match
       case Some(Cell.IsBomb()) => true
       case _ => false
@@ -73,6 +73,7 @@ object Cell:
 trait Grid:
   def findBy(position: Position): Option[Cell]
   def reveal(predicate: Cell => Boolean): Unit
+  def revealAllNear(position: Position): Unit
   def countAdjacentBombs(position: Position): Int
   def countOfRevealed: Int
   def changeFlag(position: Position): Unit
@@ -105,6 +106,12 @@ object Grid:
         if predicate(h) then h.reveal()
         reveal(t)(predicate)
       case _ =>
+
+    def revealAllNear(position: Position): Unit =
+      reveal(_.position == position)
+      if countAdjacentBombs(position) == 0 then
+        val cellsToReveal = filter(filter(cells)(_.position.adjacentTo(position)))(!_.revealed)
+        map(cellsToReveal)(c => {revealAllNear(c.position); c})
 
     override def changeFlag(position: Position): Unit = findBy(position) match
       case Some(c) => c.flag = !c.flag
