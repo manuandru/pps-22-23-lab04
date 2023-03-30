@@ -15,13 +15,13 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
   override def checkIfContainsBomb(row: Int, column: Int): Boolean =
     val target = Position(row, column)
     grid.reveal(_.position == target)
-    grid.contentOf(target) match
+    grid.findBy(target) match
       case Some(Cell.IsBomb()) => true
       case _ => false
 
   override def getStatus(row: Int, column: Int): RenderStatus =
     val position = Position(row, column)
-    grid.contentOf(position) match
+    grid.findBy(position) match
       case Some(Cell.IsBomb()) => RenderStatus.BOMB
       case Some(Cell.IsRevealed()) => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(position))
       case Some(Cell.IsFlag()) => RenderStatus.FLAG
@@ -42,7 +42,7 @@ trait Position:
 object Position:
   def apply(row: Int, column: Int): Position = PositionImpl(row: Int, column: Int)
 
-  private case class PositionImpl(val row: Int, val column: Int) extends Position:
+  private case class PositionImpl(row: Int, column: Int) extends Position:
     override def adjacentTo(other: Position): Boolean =
       Math.abs(this.row - other.row) <= 1 && Math.abs(this.column - other.column) <= 1
 
@@ -56,7 +56,7 @@ trait Cell:
 
 object Cell:
   def apply(position: Position, bomb: Boolean): Cell = CellImpl(position, bomb)
-  private case class CellImpl(val position: Position, val bomb: Boolean, var flag: Boolean = false) extends Cell:
+  private class CellImpl(val position: Position, val bomb: Boolean, var flag: Boolean = false) extends Cell:
     private var _revealed = false
     override def revealed: Boolean = _revealed
     override def reveal(): Unit = _revealed = true
@@ -64,16 +64,16 @@ object Cell:
   object IsBomb:
     def unapply(cell: Cell): Boolean = cell.revealed && cell.bomb
   object IsRevealed:
-    def unapply(cell: Cell): Boolean = cell.revealed
+    def unapply(cell: Cell): Boolean = cell.revealed && !cell.bomb
   object IsFlag:
     def unapply(cell: Cell): Boolean = !cell.revealed && cell.flag
   object IsHidden:
-    def unapply(cell: Cell): Boolean = !cell.revealed
+    def unapply(cell: Cell): Boolean = !cell.revealed && !cell.flag
 
 trait Grid:
-  def contentOf(position: Position): Option[Cell]
-  def countAdjacentBombs(position: Position): Int
+  def findBy(position: Position): Option[Cell]
   def reveal(predicate: Cell => Boolean): Unit
+  def countAdjacentBombs(position: Position): Int
   def countOfRevealed: Int
   def changeFlag(position: Position): Unit
 
@@ -91,7 +91,7 @@ object Grid:
       val isBomb = contains(bombsPosition, position)
       cells = append(cells, cons(Cell(position, isBomb), Nil()))
 
-    override def contentOf(position: Position): Option[Cell] = find(cells)(_.position == position)
+    override def findBy(position: Position): Option[Cell] = find(cells)(_.position == position)
 
     override def countAdjacentBombs(position: Position): Int = length(filter(filter(cells)(_.position.adjacentTo(position)))(_.bomb))
 
@@ -99,13 +99,14 @@ object Grid:
 
     override def reveal(predicate: Cell => Boolean): Unit = reveal(cells)(predicate)
 
+    @tailrec
     private def reveal(list: List[Cell])(predicate: Cell => Boolean): Unit = list match
       case Cons(h, t) =>
         if predicate(h) then h.reveal()
         reveal(t)(predicate)
       case _ =>
 
-    override def changeFlag(position: Position): Unit = contentOf(position) match
+    override def changeFlag(position: Position): Unit = findBy(position) match
       case Some(c) => c.flag = !c.flag
       case _ =>
 
