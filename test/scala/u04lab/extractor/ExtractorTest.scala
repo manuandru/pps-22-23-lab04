@@ -11,7 +11,7 @@ class ExtractorTest:
 
   @Test def testListCreation() =
     assertEquals(Nil(), List())
-//    assertEquals(Cons(1, Cons(2, Cons(3, Nil()))), List(1, 2, 3))⇒
+    assertEquals(Cons(1, Cons(2, Cons(3, Nil()))), List(1, 2, 3))
 
   val dellXps = Item(33, "Dell XPS 15", "notebook", "pc")
   val dellInspiron = Item(34, "Dell Inspiron 13", "notebook", "pc")
