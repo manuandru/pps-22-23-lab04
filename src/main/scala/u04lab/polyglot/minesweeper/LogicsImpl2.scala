@@ -16,17 +16,16 @@ class LogicsImpl2(size: Int, bombCount: Int) extends logic.Logics:
     val target = Position(row, column)
     grid.revealAllNear(target)
     grid.findBy(target) match
-      case Some(Cell.IsBomb()) => true
+      case Cell.IsBomb() => true
       case _ => false
 
   override def getStatus(row: Int, column: Int): RenderStatus =
     val position = Position(row, column)
     grid.findBy(position) match
-      case Some(Cell.IsBomb()) => RenderStatus.BOMB
-      case Some(Cell.IsRevealed()) => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(position))
-      case Some(Cell.IsFlag()) => RenderStatus.FLAG
-      case Some(Cell.IsHidden()) => RenderStatus.HIDDEN
-      case _ => RenderStatus.ERROR
+      case Cell.IsBomb() => RenderStatus.BOMB
+      case Cell.IsRevealed() => RenderStatus.COUNTER.setCounter(grid.countAdjacentBombs(position))
+      case Cell.IsFlag() => RenderStatus.FLAG
+      case Cell.IsHidden() => RenderStatus.HIDDEN
 
   override def revealAllBombs(): Unit = grid.perform(_.reveal())(_.bomb)
 
@@ -71,7 +70,7 @@ object Cell:
     def unapply(cell: Cell): Boolean = !cell.revealed && !cell.flag
 
 trait Grid:
-  def findBy(position: Position): Option[Cell]
+  def findBy(position: Position): Cell
   def countAdjacentBombs(position: Position): Int
   def countOfRevealed: Int
   def perform(op: Cell => Unit)(predicate: Cell => Boolean): Unit
@@ -91,7 +90,7 @@ object Grid:
       val isBomb = contains(bombsPosition, position)
       cells = append(cells, cons(Cell(position, isBomb), Nil()))
 
-    override def findBy(position: Position): Option[Cell] = find(cells)(_.position == position)
+    override def findBy(position: Position): Cell = getOrThrow(find(cells)(_.position == position))
 
     override def countAdjacentBombs(position: Position): Int = length(filter(filter(cells)(_.position.adjacentTo(position)))(_.bomb))
 
@@ -108,7 +107,7 @@ object Grid:
       perform(_.reveal())(_.position == position)
       if countAdjacentBombs(position) == 0 then
         val cellsToReveal = filter(filter(cells)(_.position.adjacentTo(position)))(!_.revealed)
-        map(cellsToReveal)(c => {revealAllNear(c.position); c}) // aka foreach
+        foreach(cellsToReveal)(c => revealAllNear(c.position))
 
     @tailrec
     private def randomPositions(count: Int)(acc: List[Position]): List[Position] = count match

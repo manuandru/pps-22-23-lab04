@@ -1,8 +1,9 @@
 package u04lab.code
 
-import scala.annotation.tailrec
-import u04lab.code.Option.*
 import u04lab.code.Option
+import u04lab.code.Option.*
+
+import scala.annotation.tailrec
 // A generic linkedlist
 enum List[E]:
   case Cons(head: E, tail: List[E])
@@ -21,6 +22,10 @@ object List:
   def map[A, B](l: List[A])(mapper: A => B): List[B] = l match
     case Cons(h, t) => Cons(mapper(h), map(t)(mapper))
     case Nil() => Nil()
+
+  def foreach[A](l: List[A])(op: A => Unit): Unit = l match
+    case Cons(h, t) => op(h); foreach(t)(op)
+    case Nil() =>
 
   def flatMap[A, B](list: List[A])(f: A => List[B]): List[B] = list match
     case Cons(head, rest) => append(f(head), flatMap(rest)(f))

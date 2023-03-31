@@ -98,7 +98,6 @@ public class GUI extends JFrame {
                 case COUNTER -> String.valueOf(status.getCounter());
                 case FLAG -> "F";
                 case HIDDEN -> "";
-                case ERROR -> "???";
             };
             entry.getKey().setText(render);
             if (status.equals(RenderStatus.COUNTER)) {
